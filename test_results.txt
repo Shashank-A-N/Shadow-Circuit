@@ -1,0 +1,12 @@
+--- Testing RLC ---
+SUCCESS: RLC
+--- Testing Diode ---
+FAILED: Diode
+--- Testing OpAmp ---
+SUCCESS: OpAmp
+--- Testing MOSFET ---
+SUCCESS: MOSFET
+--- Testing Filter ---
+FAILED: Filter
+--- Testing Transformer ---
+FAILED: Transformer

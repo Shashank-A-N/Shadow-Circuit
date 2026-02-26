@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Circuit AI Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Google Fonts for modern tech typography -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@300;400;500&display=swap"
+        rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+
+    <div class="app-container">
+
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <i class="fa-solid fa-microchip pulse-icon"></i>
+                <h1 id="wname"><span class="highlight">Shadow</span>Circuit AI</h1>
+            </div>
+            <p class="subtitle">Design & render complex electronic topologies through natural language.</p>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+
+            <!-- Generation Control Panel -->
+            <section class="control-panel glass-panel">
+                <form id="generator-form">
+                    <div class="input-group">
+                        <i class="fa-solid fa-terminal prompt-icon"></i>
+                        <input type="text" id="prompt-input"
+                            placeholder="Try: 'A 12V source connected to a 500 ohm resistor and 1e-4 Farad capacitor in parallel'"
+                            autocomplete="off" required>
+                        <button type="submit" id="generate-btn" class="glow-button">
+                            <span>Initialize</span>
+                            <i class="fa-solid fa-bolt"></i>
+                        </button>
+                    </div>
+                </form>
+
+                <div class="quick-tags">
+                    <span class="tag" data-prompt="Design a 15V common-emitter BJT amplifier with 1k resistor">BJT
+                        Amp</span>
+                    <span class="tag" data-prompt="Create an inverting op-amp with 5V input">Op-Amp</span>
+                    <span class="tag" data-prompt="Build a full-wave diode rectifier with 120V source">Rectifier</span>
+                    <span class="tag" data-prompt="Show me a low-pass Pi-filter with 10V input">Pi-Filter</span>
+                    <span class="tag" data-prompt="Generate a 240V step-down transformer">Transformer</span>
+                </div>
+            </section>
+
+            <!-- Results Display Area -->
+            <section class="results-area">
+
+                <div id="loading-state" class="state-container hidden">
+                    <div class="class-radar"></div>
+                    <p class="loading-text">Synthesizing Topology...</p>
+                </div>
+
+                <div id="error-state" class="state-container hidden">
+                    <i class="fa-solid fa-triangle-exclamation error-icon"></i>
+                    <p id="error-message">An anomaly occurred.</p>
+                </div>
+
+                <div id="result-state" class="result-container hidden glass-panel">
+
+                    <div class="image-wrapper">
+                        <div class="blueprint-overlay"></div>
+                        <img id="circuit-image" src="" alt="Generated Electronic Circuit">
+                    </div>
+
+                    <div class="analysis-panel">
+                        <h2><i class="fa-solid fa-file-waveform"></i> Schematic Analysis</h2>
+                        <div class="data-row">
+                            <span class="label">Classification:</span>
+                            <span class="value highlight-text" id="circuit-type-label">Unknown</span>
+                        </div>
+                        <div class="description-box">
+                            <p id="circuit-description">Description will appear here.</p>
+                        </div>
+
+                        <div class="verification-box">
+                            <h3><i class="fa-solid fa-clipboard-check"></i> Verification Check</h3>
+                            <p id="circuit-verification">Verification data pending...</p>
+                        </div>
+
+                        <div class="edit-box" style="margin-top: 20px; display: flex; gap: 10px;">
+                            <a id="download-circuit-btn" href="#" download="generated_circuit.png" class="glow-button"
+                                style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex: 1;">
+                                <span>Download</span>
+                                <i class="fa-solid fa-download"></i>
+                            </a>
+                            <a id="edit-circuit-btn" href="#" target="_blank" class="glow-button"
+                                style="text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex: 1;">
+                                <span>Edit Circuit</span>
+                                <i class="fa-solid fa-pen"></i>
+                            </a>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+</html>

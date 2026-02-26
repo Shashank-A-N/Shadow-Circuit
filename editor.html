@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Circuit Image Editor V2</title>
+    <!-- Firebase JS SDK will be loaded as a module below -->
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            /* deep tech dark */
+            --panel-bg: rgba(16, 24, 39, 0.85);
+            /* glass panel */
+            --primary: #00f0ff;
+            /* cyan */
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --border: rgba(0, 240, 255, 0.2);
+            --danger: #ef4444;
+            --success: #10b981;
+        }
+
+        body {
+            font-family: 'Roboto Mono', monospace;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: clamp(10px, 3vw, 20px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            font-size: clamp(12px, 1.5vw + 8px, 16px);
+            background-image:
+                linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--primary);
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: clamp(1.5rem, 4vw + 0.5rem, 2.5rem);
+            text-align: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+            max-width: 1400px;
+            width: 100%;
+            flex-direction: row;
+        }
+
+        .glass-panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            padding: 20px;
+        }
+
+        .sidebar {
+            width: 320px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .main-editor {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            /* width: 100%; */
+            overflow-x: auto;
+        }
+
+        h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: var(--primary);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        .image-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            overflow-y: auto;
+            max-height: 60vh;
+            padding-right: 5px;
+        }
+
+        /* Scrollbar Styling */
+        .image-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .image-list::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+        }
+
+        .image-list::-webkit-scrollbar-thumb {
+            background: rgba(0, 240, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        .image-list::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+
+        .image-item {
+            cursor: pointer;
+            padding: 12px;
+            background-color: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            word-break: break-all;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+            border-left: 3px solid transparent;
+        }
+
+        .image-item:hover {
+            background-color: rgba(0, 240, 255, 0.1);
+            border-left-color: var(--primary);
+        }
+
+        .image-item.active {
+            background-color: rgba(0, 240, 255, 0.2);
+            border-left-color: var(--primary);
+            color: #fff;
+            text-shadow: 0 0 5px var(--primary);
+        }
+
+        #canvas-container {
+            position: relative;
+            margin: 20px 0;
+            border: 2px solid var(--primary);
+            background-color: #fff;
+            /* White canvas is best for schematics */
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.15);
+            overflow: auto;
+            /* Allow scrolling if canvas exceeds container */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            max-width: 100%;
+        }
+
+        #canvas-container canvas {
+            max-width: 100%;
+            height: auto;
+        }
+
+        canvas {
+            display: block;
+            cursor: crosshair;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+            width: 100%;
+        }
+
+        .tool-group {
+            display: flex;
+            gap: 5px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            align-items: center;
+        }
+
+        .tool-btn {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid transparent;
+            width: 40px;
+            height: 40px;
+            border-radius: 6px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1.1rem;
+        }
+
+        .tool-btn:hover {
+            color: var(--primary);
+            background: rgba(0, 240, 255, 0.1);
+        }
+
+        .tool-btn.active {
+            color: var(--primary);
+            background: rgba(0, 240, 255, 0.2);
+            border-color: var(--border);
+            box-shadow: inset 0 0 10px rgba(0, 240, 255, 0.1);
+        }
+
+        .tool-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            color: var(--text-muted) !important;
+            background: transparent !important;
+            border-color: transparent !important;
+            box-shadow: none !important;
+        }
+
+        .action-btn {
+            padding: 10px 20px;
+            background: rgba(0, 240, 255, 0.1);
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: bold;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+        }
+
+        .action-btn:hover:not(:disabled) {
+            background: var(--primary);
+            color: #000;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.5);
+        }
+
+        .action-btn.save-btn {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border-color: var(--success);
+        }
+
+        .action-btn.save-btn:hover:not(:disabled) {
+            background: var(--success);
+            color: #fff;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+        }
+
+        .action-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            border-color: var(--text-muted);
+            color: var(--text-muted);
+        }
+
+        .control-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .control-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="color"] {
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            background: none;
+            padding: 0;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+        }
+
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        input[type="color"]::-webkit-color-swatch {
+            border: none;
+            border-radius: 50%;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100px;
+            background: transparent;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 10px var(--primary);
+        }
+
+        input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+
+        #status-msg {
+            margin-top: 15px;
+            min-height: 24px;
+            color: var(--primary);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .error {
+            color: var(--danger) !important;
+        }
+
+        .success {
+            color: var(--success) !important;
+        }
+
+        /* Stamp Tool overlay cursor */
+        .stamp-cursor {
+            position: fixed;
+            pointer-events: none;
+            /* VERY IMPORTANT: Let clicks pass through! */
+            z-index: 1000;
+            display: none;
+            opacity: 0.7;
+            transform: translate(-50%, -50%);
+            /* Center cursor over mouse pointer */
+        }
+
+        .stamp-panel {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .stamp-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            padding: 10px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .stamp-item:hover,
+        .stamp-item.active {
+            background: rgba(0, 240, 255, 0.1);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .stamp-preview {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+            filter: invert(1);
+            /* display white in UI */
+        }
+
+        .stamp-item.active .stamp-preview {
+            filter: invert(0.8) sepia(100%) hue-rotate(130deg) saturate(300%);
+            /* cyan tint */
+        }
+
+        /* Responsive Media Queries */
+        @media (max-width: 1024px) {
+            .container {
+                flex-direction: column-reverse;
+                /* Put tools on top of gallery */
+            }
+
+            .sidebar {
+                width: 100%;
+            }
+
+            .image-list {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+                max-height: 30vh;
+            }
+        }
+
+        @media (max-width: 700px) {
+            h1 {
+                font-size: 1rem;
+                margin-bottom: 15px;
+            }
+
+            .toolbar {
+                justify-content: center;
+                gap: 8px;
+            }
+
+            .action-btn {
+                padding: 10px;
+                width: 40px;
+                height: 40px;
+            }
+
+            /* Hide the text inside buttons, show only icons */
+            .action-btn span,
+            .action-btn-text {
+                display: none;
+            }
+
+            .stamp-panel {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .tool-group {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 4px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            h1 {
+                font-size: 0.85rem;
+            }
+
+            .tool-btn {
+                width: 35px;
+                height: 35px;
+                font-size: 0.9rem;
+            }
+
+            .action-btn {
+                width: 35px;
+                height: 35px;
+            }
+        }
+
+        .loading-animation {
+            color: var(--primary);
+            font-size: 1.2rem;
+            text-align: center;
+            padding: 30px;
+            animation: pulse-glow 2s infinite;
+        }
+
+        @keyframes pulse-glow {
+
+            0%,
+            100% {
+                text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+                opacity: 0.8;
+            }
+
+            50% {
+                text-shadow: 0 0 20px rgba(0, 240, 255, 1);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <h1><i class="fa-solid fa-microchip"></i> ShadowCircuit Editor PRO</h1>
+
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="glass-panel">
+                <h2><i class="fa-solid fa-folder-open"></i> Generated Circuits</h2>
+                <div class="image-list" id="image-list">
+                    <div class="loading-animation">
+                        <i class="fa-solid fa-circle-notch fa-spin"></i> Loading Circuits...
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel">
+                <h2><i class="fa-solid fa-puzzle-piece"></i> Components</h2>
+                <div class="stamp-panel" id="stamp-panel">
+                    <!-- Stamps populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Editor -->
+        <div class="main-editor glass-panel">
+            <div class="toolbar">
+                <!-- Drawing Tools -->
+                <div class="tool-group">
+                    <button class="tool-btn active" id="tool-pen" title="Pen/Wire Tool (P)"><i
+                            class="fa-solid fa-pen"></i></button>
+                    <button class="tool-btn" id="tool-line" title="Straight Line Tool (L)"><i
+                            class="fa-solid fa-minus"></i></button>
+                    <button class="tool-btn" id="tool-rect" title="Rectangle Box Tool (R)"><i
+                            class="fa-regular fa-square"></i></button>
+                    <button class="tool-btn" id="tool-eraser" title="Eraser (E)"><i
+                            class="fa-solid fa-eraser"></i></button>
+                    <button class="tool-btn" id="tool-text" title="Text Label (T)"><i
+                            class="fa-solid fa-font"></i></button>
+                </div>
+
+                <!-- Colors & Sizes -->
+                <div class="tool-group">
+                    <div class="control-item">
+                        <div class="control-row">
+                            <input type="color" id="brush-color" value="#000000" title="Color Picker">
+                            <div style="display: flex; flex-direction: column; gap: 5px;">
+                                <div style="display: flex; justify-content: space-between; font-size: 0.7rem;">
+                                    <span>Size</span>
+                                    <span id="brush-size-val">3px</span>
+                                </div>
+                                <input type="range" id="brush-size" min="1" max="20" value="3">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- History -->
+                <div class="tool-group">
+                    <button class="tool-btn" id="btn-undo" title="Undo (Ctrl+Z)" disabled><i
+                            class="fa-solid fa-rotate-left"></i></button>
+                    <button class="tool-btn" id="btn-redo" title="Redo (Ctrl+Y)" disabled><i
+                            class="fa-solid fa-rotate-right"></i></button>
+                </div>
+
+                <div style="flex-grow: 1;"></div>
+
+                <!-- Actions -->
+                <button class="action-btn" id="btn-download" disabled><i class="fa-solid fa-download"></i>
+                    <span>Download</span></button>
+                <button class="action-btn" id="btn-clear" disabled><i class="fa-solid fa-trash-can"></i>
+                    <span>Restore</span></button>
+                <button class="action-btn save-btn" id="btn-save" disabled><i class="fa-solid fa-floppy-disk"></i>
+                    <span>Save
+                        Image</span></button>
+            </div>
+
+            <div id="canvas-container">
+                <canvas id="editor-canvas" width="800" height="600"></canvas>
+            </div>
+
+            <div id="status-msg">
+                <i class="fa-solid fa-info-circle"></i> <span>Ready. Select an image from the sidebar to begin.</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden floating element for stamp preview -->
+    <img id="stamp-cursor" class="stamp-cursor" src="" alt="">
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-analytics.js";
+        import { getDatabase, ref as dbRef, get, child, set } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-database.js";
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCf1H_98VfiBlIcjt3m2qYgbx8ONOaBv_s",
+            authDomain: "scan-pdf-6f8af.firebaseapp.com",
+            databaseURL: "https://scan-pdf-6f8af-default-rtdb.firebaseio.com",
+            projectId: "scan-pdf-6f8af",
+            storageBucket: "scan-pdf-6f8af.firebasestorage.app",
+            messagingSenderId: "90910752973",
+            appId: "1:90910752973:web:235394d878ee1993512984",
+            measurementId: "G-RQZXZ03NHQ"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const db = getDatabase(app);
+
+        // Base Context
+        const urlParams = new URLSearchParams(window.location.search);
+        const imageParam = urlParams.get('image'); // e.g. circuit_web_123.png
+        const baseStoragePath = imageParam ? `circuits/${imageParam.replace('.png', '')}` : null;
+
+        // DOM Elements
+        const imageList = document.getElementById('image-list');
+        const canvas = document.getElementById('editor-canvas');
+        const ctx = canvas.getContext('2d');
+        const canvasContainer = document.getElementById('canvas-container');
+
+        // Tools
+        const tools = {
+            pen: document.getElementById('tool-pen'),
+            line: document.getElementById('tool-line'),
+            rect: document.getElementById('tool-rect'),
+            eraser: document.getElementById('tool-eraser'),
+            text: document.getElementById('tool-text')
+        };
+        const stampPanel = document.getElementById('stamp-panel');
+        const stampCursor = document.getElementById('stamp-cursor');
+
+        // Controls
+        const brushColor = document.getElementById('brush-color');
+        const brushSize = document.getElementById('brush-size');
+        const brushSizeVal = document.getElementById('brush-size-val');
+        const btnUndo = document.getElementById('btn-undo');
+        const btnRedo = document.getElementById('btn-redo');
+        const btnClear = document.getElementById('btn-clear');
+        const btnSave = document.getElementById('btn-save');
+        const btnDownload = document.getElementById('btn-download');
+        const statusMsgSpan = document.querySelector('#status-msg span');
+        const statusMsgIcon = document.querySelector('#status-msg i');
+
+        // State variables
+        let currentTool = 'pen'; // pen, line, rect, eraser, text, stamp
+        let activeStampSrc = null;
+        let isDrawing = false;
+        let startX = 0;
+        let startY = 0;
+        let currentImageObj = null;
+        let currentFilename = null;
+        let canvasSnapshot = null; // Used for previewing shapes while drawing
+
+        // History Array
+        let history = [];
+        let historyStep = -1;
+
+        // Custom Component Stamps Base64 (Simple representations)
+        const components = [
+            { id: 'resistor', name: 'Resistor', path: 'M 10 20 L 20 20 L 25 10 L 35 30 L 45 10 L 55 30 L 60 20 L 70 20' },
+            { id: 'capacitor', name: 'Capacitor', path: 'M 20 20 L 35 20 M 35 10 L 35 30 M 45 10 L 45 30 M 45 20 L 60 20' },
+            { id: 'ground', name: 'Ground', path: 'M 20 10 L 20 20 M 10 20 L 30 20 M 15 25 L 25 25 M 18 30 L 22 30' },
+            { id: 'diode', name: 'Diode', path: 'M 10 20 L 30 20 M 30 10 L 30 30 L 50 20 Z M 50 10 L 50 30 M 50 20 L 70 20' },
+            { id: 'node', name: 'Node/Dot', path: 'circle' }
+        ];
+
+        // -------------------------
+        // Initialization
+        // -------------------------
+
+        function initStamps() {
+            // Generate simple SVG data URIs for stamps
+            components.forEach(comp => {
+                let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="80" height="40" viewBox="0 0 80 40">`;
+                if (comp.path === 'circle') {
+                    svg += `<circle cx="40" cy="20" r="4" fill="#000" />`;
+                } else {
+                    svg += `<path d="${comp.path}" fill="none" stroke="#000" stroke-width="2" />`;
+                }
+                svg += `</svg>`;
+
+                const base64Svg = `data:image/svg+xml;base64,${btoa(svg)}`;
+
+                const div = document.createElement('div');
+                div.className = 'stamp-item';
+                div.innerHTML = `
+                    <img src="${base64Svg}" class="stamp-preview">
+                    <span>${comp.name}</span>
+                `;
+
+                div.onclick = () => selectStamp(comp.id, base64Svg, div);
+                stampPanel.appendChild(div);
+            });
+        }
+
+        function setStatus(text, type = 'info') {
+            statusMsgSpan.textContent = text;
+            const parent = statusMsgSpan.parentElement;
+            parent.className = '';
+            statusMsgIcon.className = '';
+
+            if (type === 'error') {
+                parent.classList.add('error');
+                statusMsgIcon.classList.add('fa-solid', 'fa-triangle-exclamation');
+            } else if (type === 'success') {
+                parent.classList.add('success');
+                statusMsgIcon.classList.add('fa-solid', 'fa-check-circle');
+            } else {
+                statusMsgIcon.classList.add('fa-solid', 'fa-info-circle');
+            }
+        }
+
+        // Auto display brush size
+        brushSize.addEventListener('input', (e) => {
+            brushSizeVal.textContent = e.target.value + 'px';
+            if (currentTool === 'eraser') {
+                // Show visual cursor representation for eraser if we wanted
+            }
+        });
+
+        // Tool Selection Logic
+        function selectTool(toolName) {
+            currentTool = toolName;
+
+            // UI Toggle
+            Object.values(tools).forEach(btn => btn.classList.remove('active'));
+            if (tools[toolName]) tools[toolName].classList.add('active');
+
+            // Remove stamp active class
+            document.querySelectorAll('.stamp-item').forEach(el => el.classList.remove('active'));
+            stampCursor.style.display = 'none';
+
+            // Cursor adjustments
+            if (toolName === 'text') {
+                canvas.style.cursor = 'text';
+            } else if (toolName === 'eraser') {
+                // Approximate an eraser cursor using an emoji/image or just keep crosshair
+                canvas.style.cursor = 'cell';
+            } else {
+                canvas.style.cursor = 'crosshair';
+            }
+        }
+
+        function selectStamp(id, src, element) {
+            // Unselect if clicking the active stamp
+            if (currentTool === 'stamp' && element.classList.contains('active')) {
+                element.classList.remove('active');
+                selectTool('pen'); // Revert to default tool
+                return;
+            }
+
+            currentTool = 'stamp';
+            activeStampSrc = src;
+
+            // UI Toggle
+            Object.values(tools).forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.stamp-item').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
+
+            canvas.style.cursor = 'none'; // hide default cursor to show stamp
+            stampCursor.src = src;
+        }
+
+        // Attach listeners to tool buttons
+        Object.keys(tools).forEach(key => {
+            tools[key].addEventListener('click', () => selectTool(key));
+        });
+
+        // Shortcut keys
+        document.addEventListener('keydown', (e) => {
+            // Ignore if in input field
+            if (e.target.tagName === 'INPUT') return;
+
+            if (e.key.toLowerCase() === 'p') selectTool('pen');
+            if (e.key.toLowerCase() === 'l') selectTool('line');
+            if (e.key.toLowerCase() === 'r') selectTool('rect');
+            if (e.key.toLowerCase() === 'e') selectTool('eraser');
+            if (e.key.toLowerCase() === 't') selectTool('text');
+
+            // Undo/Redo
+            if (e.ctrlKey && e.key.toLowerCase() === 'z') {
+                e.preventDefault();
+                undo();
+            }
+            if (e.ctrlKey && e.key.toLowerCase() === 'y') {
+                e.preventDefault();
+                redo();
+            }
+        });
+
+        // -------------------------
+        // API specific functions
+        // -------------------------
+
+        async function loadImages() {
+            if (!baseStoragePath || !imageParam) {
+                imageList.innerHTML = '<div style="color:var(--text-muted); padding:20px; text-align:center;">No specific image selected for editing. Please launch from the main app.</div>';
+                return;
+            }
+
+            // EAGER LOCAL LOAD
+            // Immediately put the expected image onto the canvas to eliminate initial blank delay
+            const localUrl = '/images/' + imageParam;
+            if (!currentImageObj) {
+                const img = new Image();
+                img.onload = () => {
+                    const maxWidth = 1000;
+                    let scale = 1;
+                    if (img.width > maxWidth) scale = maxWidth / img.width;
+                    canvas.width = img.width * scale;
+                    canvas.height = img.height * scale;
+
+                    currentImageObj = img;
+                    currentFilename = `0_original_${imageParam.replace('.png', '')}.png`;
+
+                    ctx.fillStyle = "#ffffff";
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                    history = [];
+                    historyStep = -1;
+                    saveHistoryState();
+
+                    btnClear.disabled = false;
+                    btnSave.disabled = false;
+                    btnDownload.disabled = false;
+                    setStatus(`Ready. Background syncing to cloud...`);
+                };
+                img.src = localUrl;
+            }
+
+            // BACKGROUND FIREBASE SYNC
+            try {
+                const dbRoot = dbRef(db);
+                const snapshot = await get(child(dbRoot, baseStoragePath));
+
+                if (!snapshot.exists()) {
+                    // Upload the original local image to Firebase in the background
+                    const response = await fetch(localUrl);
+                    if (!response.ok) throw new Error("Local image not found");
+                    const blob = await response.blob();
+
+                    const reader = new FileReader();
+                    reader.readAsDataURL(blob);
+                    await new Promise(resolve => reader.onloadend = resolve);
+                    const dataUrl = reader.result;
+
+                    const newObj = {};
+                    newObj[`0_original_${imageParam.replace('.png', '')}`] = {
+                        name: `0_original_${imageParam.replace('.png', '')}.png`,
+                        data: dataUrl
+                    };
+
+                    // Set confidentially in the background
+                    await set(child(dbRoot, baseStoragePath), newObj);
+
+                    // Reload the list now that it's created
+                    return loadImages();
+                }
+
+                imageList.innerHTML = '';
+                const itemsData = snapshot.val();
+                const sortedKeys = Object.keys(itemsData).sort();
+
+                for (let i = 0; i < sortedKeys.length; i++) {
+                    const key = sortedKeys[i];
+                    const itemData = itemsData[key];
+
+                    const item = document.createElement('div');
+                    item.className = 'image-item';
+
+                    let displayName = itemData.name;
+                    if (displayName.includes('0_original_')) {
+                        displayName = "Original Circuit";
+                    } else {
+                        const tsMatch = displayName.match(/edited_(\d+)/);
+                        if (tsMatch) {
+                            displayName = "Edited: " + new Date(parseInt(tsMatch[1])).toLocaleTimeString();
+                        }
+                    }
+
+                    item.innerHTML = `<span class="image-name"><i class="fa-regular fa-file-image"></i> ${displayName}</span>`;
+                    item.onclick = (e) => {
+                        // Prevent loading logic if clicking the delete button
+                        if (e.target.closest('.delete-btn')) return;
+                        loadFirebaseImageToCanvas(itemData, itemData.name, item);
+                    };
+
+                    const deleteBtn = document.createElement('i');
+                    deleteBtn.className = 'fa-solid fa-trash delete-btn';
+                    deleteBtn.title = 'Delete this edit permanently';
+                    deleteBtn.style.color = 'var(--danger)';
+                    deleteBtn.style.cursor = 'pointer';
+                    deleteBtn.style.padding = '0px 5px';
+                    deleteBtn.style.marginLeft = 'auto';
+
+                    deleteBtn.onclick = async (e) => {
+                        e.stopPropagation(); // prevent clicking the parent row
+                        if (confirm(`Are you sure you want to permanently delete "${displayName}" from the cloud?`)) {
+                            setStatus('Deleting from cloud...');
+                            try {
+                                const dbRoot = dbRef(db);
+                                await set(child(dbRoot, `${baseStoragePath}/${key}`), null);
+                                setStatus('Deleted successfully', 'success');
+                                loadImages(); // Refresh the list
+                            } catch (err) {
+                                console.error(err);
+                                setStatus('Failed to delete image.', 'error');
+                            }
+                        }
+                    };
+
+                    item.style.display = 'flex';
+                    item.style.justifyContent = 'space-between';
+                    item.style.alignItems = 'center';
+                    item.appendChild(deleteBtn);
+
+                    imageList.appendChild(item);
+                }
+
+                // Automatically load the latest
+                const lastItem = imageList.lastChild;
+                if (lastItem) setTimeout(() => lastItem.click(), 100);
+
+            } catch (err) {
+                console.error(err);
+                imageList.innerHTML = '<div class="error" style="padding:20px;"><i class="fa-solid fa-triangle-exclamation"></i> Cloud sync failed.</div>';
+                setStatus('Failed to connect to Firebase Database', 'error');
+            }
+        }
+
+        async function loadFirebaseImageToCanvas(itemData, filename, element) {
+            // Update UI active state
+            document.querySelectorAll('.image-item').forEach(el => el.classList.remove('active'));
+            if (element) element.classList.add('active');
+
+            currentFilename = filename;
+            setStatus(`Downloading cloud image...`);
+
+            try {
+                const img = new Image();
+                img.onload = () => {
+                    const maxWidth = 1000; // max reasonable drawing width
+                    let scale = 1;
+
+                    if (img.width > maxWidth) {
+                        scale = maxWidth / img.width;
+                    }
+
+                    canvas.width = img.width * scale;
+                    canvas.height = img.height * scale;
+
+                    currentImageObj = img;
+
+                    // Set default schematic background (white)
+                    ctx.fillStyle = "#ffffff";
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    // Draw image
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                    // Reset history
+                    history = [];
+                    historyStep = -1;
+                    saveHistoryState();
+
+                    // Enable controls
+                    btnClear.disabled = false;
+                    btnSave.disabled = false;
+                    btnDownload.disabled = false;
+                    setStatus(`Ready. Editing from cloud.`);
+                };
+                img.onerror = () => {
+                    setStatus('Error rendering cloud image.', 'error');
+                };
+                img.src = itemData.data;
+            } catch (err) {
+                console.error(err);
+                setStatus('Failed to load image from Firebase Database.', 'error');
+            }
+        }
+
+        // -------------------------
+        // History Management
+        // -------------------------
+
+        function saveHistoryState() {
+            // Remove future states if we drew something after undoing
+            if (historyStep < history.length - 1) {
+                history = history.slice(0, historyStep + 1);
+            }
+
+            history.push(canvas.toDataURL());
+            historyStep++;
+            updateHistoryButtons();
+        }
+
+        function updateHistoryButtons() {
+            btnUndo.disabled = historyStep <= 0;
+            btnRedo.disabled = historyStep >= history.length - 1;
+        }
+
+        function undo() {
+            if (historyStep > 0) {
+                historyStep--;
+                restoreCanvasFromDataUrl(history[historyStep]);
+                updateHistoryButtons();
+            }
+        }
+
+        function redo() {
+            if (historyStep < history.length - 1) {
+                historyStep++;
+                restoreCanvasFromDataUrl(history[historyStep]);
+                updateHistoryButtons();
+            }
+        }
+
+        function restoreCanvasFromDataUrl(dataUrl) {
+            const img = new Image();
+            img.onload = () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0);
+            };
+            img.src = dataUrl;
+        }
+
+        // -------------------------
+        // Core Drawing Logic
+        // -------------------------
+
+        // Stamp overlay tracker
+        canvasContainer.addEventListener('mousemove', (e) => {
+            if (currentTool === 'stamp' && activeStampSrc) {
+                // Remove the +5px offset and let the transform: translate(-50%, -50%) handle centering
+                stampCursor.style.display = 'block';
+                stampCursor.style.left = e.clientX + 'px';
+                stampCursor.style.top = e.clientY + 'px';
+            } else {
+                stampCursor.style.display = 'none';
+            }
+        });
+        canvasContainer.addEventListener('mouseleave', () => {
+            stampCursor.style.display = 'none';
+        });
+
+        function setupBrush() {
+            if (currentTool === 'eraser') {
+                ctx.strokeStyle = '#ffffff'; // Assuming schematics are on white background
+                ctx.lineWidth = brushSize.value * 2; // Make eraser slightly bigger
+            } else {
+                ctx.strokeStyle = brushColor.value;
+                ctx.fillStyle = brushColor.value; // for text
+                ctx.lineWidth = brushSize.value;
+            }
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.font = `${Math.max(14, brushSize.value * 4)}px monospace`;
+        }
+
+        // Helper function to get exact canvas coordinates regardless of CSS scaling
+        function getMousePos(evt) {
+            const rect = canvas.getBoundingClientRect();
+            // Calculate scale factors
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            return {
+                x: (evt.clientX - rect.left) * scaleX,
+                y: (evt.clientY - rect.top) * scaleY
+            };
+        }
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (!currentImageObj) return;
+            const pos = getMousePos(e);
+            startX = pos.x;
+            startY = pos.y;
+
+            setupBrush();
+
+            if (currentTool === 'text') {
+                const text = prompt("Enter label text:");
+                if (text) {
+                    ctx.fillText(text, startX, startY);
+                    saveHistoryState();
+                }
+                return;
+            }
+
+            if (currentTool === 'stamp' && activeStampSrc) {
+                const stampImg = new Image();
+                stampImg.onload = () => {
+                    // StartX and StartY are already relative to canvas top-left
+                    // Draw centered around the mouse click point
+                    const drawX = startX - (stampImg.width / 2);
+                    const drawY = startY - (stampImg.height / 2);
+                    ctx.drawImage(stampImg, drawX, drawY);
+                    saveHistoryState();
+                };
+                stampImg.src = activeStampSrc;
+                return;
+            }
+
+            isDrawing = true;
+            // Save state for shape previews while drawing
+            if (['line', 'rect'].includes(currentTool)) {
+                canvasSnapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            } else {
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+
+            const pos = getMousePos(e);
+            const currentX = pos.x;
+            const currentY = pos.y;
+
+            if (['pen', 'eraser'].includes(currentTool)) {
+                ctx.lineTo(currentX, currentY);
+                ctx.stroke();
+            } else if (['line', 'rect'].includes(currentTool)) {
+                // Restore canvas to before shape started, then draw preview
+                ctx.putImageData(canvasSnapshot, 0, 0);
+
+                ctx.beginPath();
+                if (currentTool === 'line') {
+                    ctx.moveTo(startX, startY);
+                    ctx.lineTo(currentX, currentY);
+                } else if (currentTool === 'rect') {
+                    ctx.rect(startX, startY, currentX - startX, currentY - startY);
+                }
+                ctx.stroke();
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            if (!isDrawing) return;
+            isDrawing = false;
+            saveHistoryState();
+        });
+
+        canvas.addEventListener('mouseout', () => {
+            if (isDrawing) {
+                isDrawing = false;
+                saveHistoryState();
+            }
+        });
+
+        // -------------------------
+        // Header Actions
+        // -------------------------
+
+        btnUndo.addEventListener('click', undo);
+        btnRedo.addEventListener('click', redo);
+
+        btnClear.addEventListener('click', () => {
+            if (currentImageObj && confirm('Restore original image? This will clear all edits.')) {
+
+                // Clear and recreate background
+                ctx.fillStyle = "#ffffff";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.drawImage(currentImageObj, 0, 0, canvas.width, canvas.height);
+                saveHistoryState();
+            }
+        });
+
+        btnSave.addEventListener('click', async () => {
+            if (!baseStoragePath) return;
+
+            setStatus('Saving to cloud...', 'info');
+            btnSave.disabled = true;
+
+            btnSave.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span class="action-btn-text">Saving...</span>';
+
+            try {
+                const timestamp = new Date().getTime();
+                const nodeKey = `edited_${timestamp}`;
+                const dataUrl = canvas.toDataURL('image/png');
+
+                const newRef = child(dbRef(db), `${baseStoragePath}/${nodeKey}`);
+                await set(newRef, {
+                    name: `${nodeKey}.png`,
+                    data: dataUrl
+                });
+
+                setStatus(`Successfully saved to cloud!`, 'success');
+                // Refresh sidebar
+                loadImages();
+            } catch (err) {
+                console.error(err);
+                setStatus('Cloud save failed.', 'error');
+            } finally {
+                btnSave.disabled = false;
+                btnSave.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> <span class="action-btn-text">Save</span>';
+            }
+        });
+
+        // Download Action
+        btnDownload.addEventListener('click', () => {
+            if (!currentFilename) return;
+
+            const imageData = canvas.toDataURL('image/png');
+
+            // Create a temporary anchor element
+            const link = document.createElement('a');
+            link.download = `edited_${currentFilename}`;
+            link.href = imageData;
+
+            // Append to body, click, and remove
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            setStatus('Downloaded image.', 'success');
+        });
+
+        // Launch Application
+        initStamps();
+        loadImages();
+
+    </script>
+</body>
+
+</html>
