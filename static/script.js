@@ -58,7 +58,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // This prevents the 'AbortError: The play() request was interrupted' if a new request is made quickly.
 
             // Prevent caching issues by appending timestamp if needed, but Flask handles this generally
-            circuitImage.src = data.image_url;
+            const fullImageUrl = data.image_url.startsWith('http') 
+                ? data.image_url 
+                : 'https://shashank-a-n-ai-circuit.hf.space' + data.image_url;
+            circuitImage.src = fullImageUrl;
             circuitTypeLabel.textContent = data.circuit_type;
             circuitDescription.textContent = data.description;
             circuitVerification.textContent = data.verification;
@@ -72,7 +75,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 editBtn.target = '_self'; // Directly transfer without opening a new tab
             }
             if (dlBtn) {
-                dlBtn.href = data.image_url;
+                dlBtn.href = fullImageUrl;
                 dlBtn.download = filename;
             }
 
@@ -95,5 +98,6 @@ document.addEventListener('DOMContentLoaded', () => {
         resultState.classList.add('hidden');
     }
 });
+
 
 
