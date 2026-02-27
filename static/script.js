@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const dlBtn = document.getElementById('download-circuit-btn');
 
             if (editBtn) {
-                editBtn.href = `/editor?image=${filename}`;
+                editBtn.href = `editor.html?image=${filename}`;
                 editBtn.target = '_self'; // Directly transfer without opening a new tab
             }
             if (dlBtn) {
@@ -95,4 +95,5 @@ document.addEventListener('DOMContentLoaded', () => {
         resultState.classList.add('hidden');
     }
 });
+
 
