@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loadingState.classList.remove('hidden');
 
         try {
-            const response = await fetch('/api/generate_circuit', {
+            const response = await fetch('https://shashank-a-n-ai-circuit.hf.space/api/generate_circuit', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -95,3 +95,4 @@ document.addEventListener('DOMContentLoaded', () => {
         resultState.classList.add('hidden');
     }
 });
+
